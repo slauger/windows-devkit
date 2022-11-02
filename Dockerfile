@@ -12,6 +12,9 @@ ENV KUBECTL_VERSION=v1.25.0
 # renovate: datasource=docker depName=quay.io/openshift-release-dev/ocp-release versioning=loose
 ENV OPENSHIFT_VERSION=4.11.11
 
+# renovate: datasource=github-tags depName=tektoncd/cli
+ENV TKN_VERSION=0.25.1
+
 # renovate: datasource=github-tags depName=helm/helm
 ENV HELM_VERSION=v3.10.1
 
@@ -44,6 +47,12 @@ RUN curl -fsSL -o openshift-client-windows.zip https://mirror.openshift.com/pub/
     unzip openshift-client-windows.zip oc.exe && \
     mv oc.exe /opt/binaries/oc.exe && \
     rm openshift-client-windows.zip
+
+# tkn
+RUN curl -fsSL -o tkn_Windows_x86_64.zip https://github.com/tektoncd/cli/releases/download/v0.25.1/tkn_0.25.1_Windows_x86_64.zip && \
+    unzip tkn_Windows_x86_64.zip tkn.exe && \
+    mv tkn.exe /opt/binaries/tkn.exe && \
+    rm tkn_Windows_x86_64.zip
 
 # helm
 RUN curl -fsSL -o helm-windows-amd64.zip https://get.helm.sh/helm-${HELM_VERSION}-windows-amd64.zip && \
@@ -85,6 +94,8 @@ RUN curl -fsSL -o /opt/tools/MobaXterm_Portable.zip $(curl -s https://mobaxterm.
 RUN curl -fsSL -o /opt/tools/cmder.zip https://github.com/cmderdev/cmder/releases/download/${CMDER_VERSION}/cmder.zip
 
 FROM registry.access.redhat.com/ubi9/httpd-24
+
+RUN sed -i 's/Listen 0.0.0.0:8080/Listen 0.0.0.0:1337/g' /etc/httpd/conf/httpd.conf
 
 COPY --from=builder /opt/binaries /var/www/html/binaries
 COPY --from=builder /opt/tools /var/www/html/tools
