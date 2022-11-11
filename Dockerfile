@@ -21,11 +21,17 @@ ENV HELM_VERSION=v3.10.1
 # renovate: datasource=github-tags depName=helmfile/helmfile
 ENV HELMFILE_VERSION=0.147.0
 
+# renovate: datasource=github-tags depName=norwoodj/helm-docs
+ENV HELM_DOCS_VERSION=1.11.0
+
 # renovate: datasource=gihub-tags depName=kubernetes-sigs/krew
 ENV KREW_VERSION=v0.4.3
 
 # renovate: datasource=github-tags depName=ahmetb/kubectx
 ENV KUBECTX_VERSION=v0.9.4
+
+# renovate: datasource=github-tags depName=grafana/k6
+ENV K6_VERSION=0.41.0
 
 # renovate: datasource=github-tags depName=cmderdev/cmder
 ENV CMDER_VERSION=v1.3.20
@@ -66,6 +72,11 @@ RUN curl -fsSL -o helmfile_windows_arm64.tar.gz https://github.com/helmfile/helm
     mv helmfile.exe /opt/binaries/helmfile.exe && \
     rm helmfile_windows_arm64.tar.gz
 
+RUN curl -fsSL -o helm-docs_Windows_x86_64.tar.gz https://github.com/norwoodj/helm-docs/releases/download/v${HELM_DOCS_VERSION}/helm-docs_${HELM_DOCS_VERSION}_Windows_x86_64.tar.gz && \
+    tar vxzf helm-docs_Windows_x86_64.tar.gz helm-docs.exe && \
+    mv helm-docs.exe /opt/binaries/helm-docs.exe && \
+    rm -rf helm-docs_Windows_x86_64.tar.gz
+
 # krew
 RUN curl -fsSL -o krew-windows_amd64.tar.gz https://github.com/kubernetes-sigs/krew/releases/download/${KREW_VERSION}/krew-windows_amd64.tar.gz && \
     tar vxzf krew-windows_amd64.tar.gz ./krew-windows_amd64.exe && \
@@ -84,6 +95,12 @@ RUN curl -fsSL -o kubens_windows_x86_64.zip https://github.com/ahmetb/kubectx/re
     mv kubens.exe /opt/binaries/kubens.exe && \
     rm kubens_windows_x86_64.zip
 
+# k6
+RUN curl -fsSL -o k6-v${K6_VERSION}-windows-amd64.zip https://github.com/grafana/k6/releases/download/v${K6_VERSION}/k6-v${K6_VERSION}-windows-amd64.zip && \
+    unzip k6-v${K6_VERSION}-windows-amd64.zip k6-v${K6_VERSION}-windows-amd64/k6.exe && \
+    mv k6-*-windows-amd64/k6.exe /opt/binaries/k6.exe && \
+    rm -rf k6-v${K6_VERSION}-windows-amd64.zip
+
 # VSC
 RUN curl -fsSL -o /opt/tools/VSCode-win32-x64.zip "https://code.visualstudio.com/sha/download?build=stable&os=win32-x64-archive"
 
@@ -100,4 +117,11 @@ RUN sed -i 's/Listen 0.0.0.0:8080/Listen 0.0.0.0:1337/g' /etc/httpd/conf/httpd.c
 COPY --from=builder /opt/binaries /var/www/html/binaries
 COPY --from=builder /opt/tools /var/www/html/tools
 
-RUN tar czf /var/www/html/binaries.tar.gz -C /var/www/html/binaries .
+RUN tar vcf /var/www/html/binaries.tar.gz -C /var/www/html/binaries . && \
+    cat /var/www/html/binaries.tar.gz | base64 -w0 > /var/www/html/binaries.tar.gz.base64 && \
+    gzip /var/www/html/binaries.tar.gz.base64 && \
+    rm /var/www/html/binaries.tar.gz && \
+    tar vcf /var/www/html/tools.tar.gz -C /var/www/html/tools . && \
+    cat /var/www/html/tools.tar.gz | base64 -w0 > /var/www/html/tools.tar.gz.base64 && \
+    gzip /var/www/html/tools.tar.gz.base64 && \
+    rm /var/www/html/tools.tar.gz
